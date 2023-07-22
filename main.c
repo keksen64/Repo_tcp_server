@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <io.h>
+#include <time.h>
+
 #define MAX 80
 #define PORT 11001
 #define SA struct sockaddr
@@ -12,14 +14,34 @@
 void func(int connfd)
 {
     char buff[MAX];
+    int i;
+    time_t now;
+    int count = 0;
     // infinite loop for chat
-    for (;;) {
+
+    for(;;){
         memset(buff,0,MAX);
-        recv(connfd, buff, sizeof(buff), 0);
-        printf("connfid - %d From client: %s\t", connfd, buff);
+        i = recv(connfd, buff, sizeof(buff), 0);
+        if(i<0){
+            break;
+        }
+        //printf("connfid - %d From client: %s\t", connfd, buff);
+        //printf("%d",i);
+
         strcpy(buff,"r23123123\t\n");
         send(connfd, buff, sizeof(buff),0);
+        count++;
+        if(count%10000==0){
+            //time_t now;
+            time(&now);
+
+            // Преобразование в местный формат времени и вывод на стандартный вывод
+            printf("%s", ctime(&now));
+            printf("count %d\n", count);
+        }
     }
+
+
 }
 
 void createWSAData(){
@@ -82,22 +104,23 @@ int main()
         printf("Server listening..\n");
     len = sizeof(cli);
 
-    // Accept the data packet from client and verification
-    connfd = accept(sockfd, (SA*)&cli, &len);
-    if (connfd < 0) {
-        printf("%d", WSAGetLastError());
-        printf("server accept failed...\n");
-        exit(0);
+    for(;;) {
+        // Accept the data packet from client and verification
+        //зависает здесь!!!
+        connfd = accept(sockfd, (SA *) &cli, &len);
+        if (connfd < 0) {
+            printf("%d", WSAGetLastError());
+            printf("server accept failed...\n");
+            exit(0);
+        } else {
+           // printf("%d", WSAGetLastError());
+           // printf("server accept the client...\n");
+        }
+
+
+        // Function for chatting between client and server
+        func(connfd);
     }
-    else{
-        printf("%d", WSAGetLastError());
-        printf("server accept the client...\n");
-    }
-
-
-    // Function for chatting between client and server
-    func(connfd);
-
     // After chatting close the socket
     close(sockfd);
 }
