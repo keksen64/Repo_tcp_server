@@ -5,22 +5,21 @@
 #include <string.h>
 #include <io.h>
 #include <time.h>
+#include <pthread.h>
 
 #define MAX 80
 #define PORT 11001
 #define SA struct sockaddr
 
 // Function designed for chat between client and server.
-void func(int connfd)
+void *handler(int *arg)
 {
     char buff[MAX];
     int i;
     time_t now;
     int count = 0;
-    // infinite loop for chat
-    printf("open channel\n");
+    int connfd = *arg;
     for(;;){
-
         memset(buff,0,MAX);
         i = recv(connfd, buff, sizeof(buff), 0);
         if(i<0){
@@ -28,22 +27,17 @@ void func(int connfd)
             break;
         }
         printf("connfid - %d From client: %s\t", connfd, buff);
-        //printf("%d",i);
-
         strcpy(buff,"r23123123\t\n");
         send(connfd, buff, sizeof(buff),0);
         count++;
         if(count%10000==0){
             //time_t now;
             time(&now);
-
             // Преобразование в местный формат времени и вывод на стандартный вывод
             printf("%s", ctime(&now));
             printf("count %d\n", count);
         }
     }
-
-
 }
 
 void createWSAData(){
@@ -57,12 +51,11 @@ void createWSAData(){
 }
 
 
-
-// Driver function
 int main()
 {
     int sockfd, connfd, len, iResult;
     struct sockaddr_in servaddr, cli;
+    pthread_t threadId;
 
     WSADATA wsaData;
     iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
@@ -82,7 +75,6 @@ int main()
         printf("Socket successfully created..\n");
 
     memset(&servaddr,0,sizeof(servaddr));
-
     // assign IP, PORT
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -106,23 +98,21 @@ int main()
         printf("Server listening..\n");
     len = sizeof(cli);
 
+    //подготовка сервера окончена
     for(;;) {
         // Accept the data packet from client and verification
-        //зависает здесь!!!
+        //точка останова
+        printf("STOP POINT\n");
         connfd = accept(sockfd, (SA *) &cli, &len);
         if (connfd < 0) {
             printf("%d", WSAGetLastError());
             printf("server accept failed...\n");
             exit(0);
-        } else {
-           // printf("%d", WSAGetLastError());
-           // printf("server accept the client...\n");
         }
-
-
-        // Function for chatting between client and server
-        func(connfd);
+        //вызов обработчика
+        printf("connfid - %d ", connfd);
+        pthread_create(&threadId, NULL, (void *(*)(void *)) handler, &connfd);
+        //handler(connfd);
     }
-    // After chatting close the socket
-    close(sockfd);
+   // close(sockfd);
 }
