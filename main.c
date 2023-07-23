@@ -18,14 +18,16 @@ void func(int connfd)
     time_t now;
     int count = 0;
     // infinite loop for chat
-
+    printf("open channel\n");
     for(;;){
+
         memset(buff,0,MAX);
         i = recv(connfd, buff, sizeof(buff), 0);
         if(i<0){
+            printf("closed channel");
             break;
         }
-        //printf("connfid - %d From client: %s\t", connfd, buff);
+        printf("connfid - %d From client: %s\t", connfd, buff);
         //printf("%d",i);
 
         strcpy(buff,"r23123123\t\n");
